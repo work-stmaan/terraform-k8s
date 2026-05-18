@@ -1,0 +1,48 @@
+name: 'Terraform GitOps Pipeline'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    name: 'Terraform Run'
+    runs-on: self-hosted # ВАЖНО: Задача прилетит на ваш локальный раннер
+
+    steps:
+    # 1. Скачиваем код (включая папку ingress-nginx и файл main.tf)
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 2. Настраиваем зеркало для плагинов Terraform на раннере
+    - name: Configure Terraform Mirror
+      run: |
+        cat << 'INNER_EOF' > ~/.terraformrc
+        provider_installation {
+          network_mirror {
+            url = "https://yandexcloud.net"
+            include = ["registry.terraform.io/*/*"]
+          }
+          direct {
+            exclude = ["registry.terraform.io/*/*"]
+          }
+        }
+        INNER_EOF
+
+    # 3. Инициализация (подключение к бэкенду в K8s)
+    - name: Terraform Init
+      run: terraform init
+
+    # 4. Если это Pull Request — показываем план изменений
+    - name: Terraform Plan
+      if: github.event_name == 'pull_request'
+      run: terraform plan
+
+    # 5. Если это пуш в main — применяем изменения
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve
