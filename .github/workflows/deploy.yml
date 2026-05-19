@@ -11,14 +11,13 @@ on:
 jobs:
   terraform:
     name: 'Terraform Run'
-    runs-on: self-hosted # ВАЖНО: Задача прилетит на ваш локальный раннер
+    runs-on: self-hosted
 
     steps:
-    # 1. Скачиваем код (включая папку ingress-nginx и файл main.tf)
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Настраиваем зеркало для плагинов Terraform на раннере
+    # Исправляем URL зеркала (добавляем terraform-mirror.)
     - name: Configure Terraform Mirror
       run: |
         cat << 'INNER_EOF' > ~/.terraformrc
@@ -33,16 +32,13 @@ jobs:
         }
         INNER_EOF
 
-    # 3. Инициализация (подключение к бэкенду в K8s)
     - name: Terraform Init
       run: terraform init
 
-    # 4. Если это Pull Request — показываем план изменений
     - name: Terraform Plan
       if: github.event_name == 'pull_request'
       run: terraform plan
 
-    # 5. Если это пуш в main — применяем изменения
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: terraform apply -auto-approve
