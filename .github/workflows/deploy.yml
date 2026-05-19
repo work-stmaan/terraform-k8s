@@ -17,15 +17,20 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # Мы убрали ломающий шаг. Раннер возьмет правильный конфиг из вашей системы.
-
+    # Жестко передаем файл конфигурации зеркала через переменную окружения
     - name: Terraform Init
-      run: terraform init
+      env:
+        TF_CLI_CONFIG_FILE: "./terraform.rc"
+      run: terraform init -reconfigure
 
     - name: Terraform Plan
       if: github.event_name == 'pull_request'
+      env:
+        TF_CLI_CONFIG_FILE: "./terraform.rc"
       run: terraform plan
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        TF_CLI_CONFIG_FILE: "./terraform.rc"
       run: terraform apply -auto-approve
