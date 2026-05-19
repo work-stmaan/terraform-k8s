@@ -2,11 +2,18 @@ name: 'Terraform GitOps Pipeline'
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
+  # Добавляет кнопку запуска пайплайна вручную на сайте GitHub
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Что сделать? (apply или destroy)'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+        - apply
+        - destroy
 
 jobs:
   terraform:
@@ -17,20 +24,21 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # Жестко передаем файл конфигурации зеркала через переменную окружения
     - name: Terraform Init
       env:
         TF_CLI_CONFIG_FILE: "./terraform.rc"
       run: terraform init -reconfigure
 
-    - name: Terraform Plan
-      if: github.event_name == 'pull_request'
-      env:
-        TF_CLI_CONFIG_FILE: "./terraform.rc"
-      run: terraform plan
-
+    # Запускается при обычном пуше или если вручную выбрали 'apply'
     - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
       env:
         TF_CLI_CONFIG_FILE: "./terraform.rc"
       run: terraform apply -auto-approve
+
+    # Запускается ТУЛЬКО если на сайте вручную выбрали 'destroy'
+    - name: Terraform Destroy
+      if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+      env:
+        TF_CLI_CONFIG_FILE: "./terraform.rc"
+      run: terraform destroy -auto-approve
