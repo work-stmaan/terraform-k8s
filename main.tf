@@ -20,6 +20,11 @@ resource "helm_release" "nginx_web" {
   name             = "my-nginx"
   # Указываем путь к локальной папке, которую мы только что скачали
   chart            = "./ingress-nginx"
+  set {
+    name  = "controller.replicaCount"
+    value = "2"
+  }
+
   namespace        = "production"
   create_namespace = true
 }
