@@ -17,20 +17,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # Исправляем URL зеркала (добавляем terraform-mirror.)
-    - name: Configure Terraform Mirror
-      run: |
-        cat << 'INNER_EOF' > ~/.terraformrc
-        provider_installation {
-          network_mirror {
-            url = "https://yandexcloud.net"
-            include = ["registry.terraform.io/*/*"]
-          }
-          direct {
-            exclude = ["registry.terraform.io/*/*"]
-          }
-        }
-        INNER_EOF
+    # Мы убрали ломающий шаг. Раннер возьмет правильный конфиг из вашей системы.
 
     - name: Terraform Init
       run: terraform init
